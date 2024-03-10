@@ -1,5 +1,8 @@
 import requests
+import pandas as pd
 from unidecode import unidecode
+from translate import Translator
+from datetime import datetime
 
 # 1. Prepare variables
 api_key = "7d164510ae104c8fa46212207230112"
@@ -46,7 +49,12 @@ pressure = response['current']['pressure_mb']
 humidity = response['current']['humidity']
 
 # 4. Display general weather overview message
-print(f"Weather overview: {response['current']['condition']['text']}.")
+translator = Translator(to_lang='pl')
+weather_text = response['current']['condition']['text']
+weather_text_pl = translator.translate(weather_text)
+
+print(f"Weather overview: {weather_text} (PL: {weather_text_pl}).")
+
 
 # 5. Prepare function to display emojis
 def display_weather_icon(temp):
@@ -58,7 +66,7 @@ def display_weather_icon(temp):
         print("🌤️")
 
 
-# 5. Display weather data based on the user input
+# 6. Display weather data based on the user input
 if user_choice == 1:
     display_weather_icon(temp=temp_c)
     print(f"Temperature for {city} is: {temp_c}°C degrees.")
@@ -73,3 +81,25 @@ elif user_choice == 4:
     print(f"Humidity for {city} is: {humidity}%.")
 else:
     print("Invalid data.")
+
+
+# 7. Save weather data to file
+
+# Prepare date
+current_date = datetime.now()
+
+# Prepare data for pandas dataframe
+data = {'Miasto': city,
+        'Temperatura (°C)': temp_c,
+        'Ciśnienie': pressure,
+        'Wilgotność': humidity,
+        'Stan pogodowy': weather_text_pl,
+        'Data': current_date.strftime("%Y-%m-%d %H:%M")
+        }
+
+# Create pandas dataframe
+df = pd.DataFrame([data])
+
+# Save data to excel file
+excel_filename = f'dane_pogoda_{city.lower()}_{current_date.strftime("%Y%m%d")}.xlsx'  # lower() - changes city name to lowercase
+df.to_excel(excel_filename, index=False, engine='openpyxl')
